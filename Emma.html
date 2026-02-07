@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Emma</title>
+    <style>
+        html,body { height:100%; margin:0; }
+        body {
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+            background:#f2f6fa;
+        }
+
+        /* center container */
+        .center {
+            display:flex;
+            gap:20px;
+            align-items:center;
+            justify-content:center;
+        }
+
+        button {
+            padding:12px 22px;
+            font-size:18px;
+            border-radius:8px;
+            border:1px solid rgba(0,0,0,0.12);
+            background:white;
+            cursor:pointer;
+            box-shadow:0 6px 14px rgba(0,0,0,0.06);
+        }
+
+        /* left button grow states: will grow as the right button shrinks */
+        #left {
+            transition: transform 200ms ease;
+            position: relative;
+            overflow: visible;
+        }
+        #left.grow-1 { transform: scale(2.00); }
+        #left.grow-2 { transform: scale(3.00); }
+        #left.grow-3 { transform: scale(4.00); }
+
+        /* envelope transform when clicked — improved visuals (flap + paper) */
+        #left {
+            /* 3D space for flap flip */
+            perspective: 800px;
+            transform-style: preserve-3d;
+        }
+
+        #left.envelope {
+            /* stronger, higher-contrast pink gradient */
+            background: linear-gradient(180deg,#ff4d88,#ff165f);
+            color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        }
+
+        /* flap (top) — flips open with rotateX */
+        #left.envelope::before {
+            /* brighter flap highlight to contrast with the darker pink */
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 52%;
+            transform-origin: center top;
+            transform: rotateX(0deg);
+            transition: transform 450ms cubic-bezier(.2,.8,.2,1);
+            pointer-events: none;
+            z-index: 3;
+            backface-visibility: hidden;
+        }
+        #left.envelope.open::before {
+            transform: rotateX(-180deg) translateY(-6%);
+        }
+
+        /* front V fold to suggest envelope shape */
+        #left.envelope::after {
+            /* more visible V-fold to read as an envelope */
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 36%;
+            width: 100%;
+            height: 64%;
+            background: rgba(255,255,255,0.12);
+            clip-path: polygon(0 0, 50% 30%, 100% 0, 100% 100%, 0 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* the 'paper' inside the envelope */
+        #left .envelope-msg {
+            position: absolute;
+            left: 50%;
+            /* keep the paper lower while closed so it doesn't show as a white box over the fold */
+            top: 74%;
+            transform: translate(-50%, -10%);
+            opacity: 0;
+            transition: opacity 300ms ease, transform 300ms ease, top 300ms ease;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            background: #fffefc; /* slightly warm white */
+            color: #111;
+            padding: 14px 16px;
+            border-radius: 10px;
+            width: 72%;
+            text-align: center;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+            z-index: 1;
+            border: 1px solid rgba(0,0,0,0.06);
+        }
+        #left.envelope.open .envelope-msg {
+            opacity: 1;
+            top: 60%;
+            text-align: left;
+            font-size:12px;
+            transform: translate(-50%, -42%);
+        }
+
+        #left .btn-label { display: inline-block; transition: opacity 120ms linear; }
+        #left.envelope .btn-label { opacity: 0; }
+
+        /* hide/animate the NO button when needed */
+        .hidden {
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+            transition: opacity 220ms ease, transform 220ms ease;
+        }
+
+        /* tune envelope size/spacing */
+        #left.envelope {
+            padding: 18px 26px;
+            min-width: 140px;
+            min-height: 80px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* main image (replace src in the HTML to change the image) */
+        #mainImage {
+            display:block;
+            max-width:360px;
+            width:100%;
+            height:auto;
+            border-radius:12px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.08);
+            margin-bottom:18px;
+        }
+
+        /* shrink animation: three visible steps then disappear (using transitions so each click advances)
+           also allow smooth teleporting by transitioning left/top when the button becomes fixed */
+        #right {
+            transition: transform 250ms ease, opacity 250ms ease, left 200ms ease, top 200ms ease;
+            will-change: transform, left, top, opacity;
+        }
+
+        /* per-click shrink states */
+        #right.shrink-1 { transform: scale(0.75); opacity: 1; }
+        #right.shrink-2 { transform: scale(0.5);  opacity: 1; }
+        #right.shrink-3 { transform: scale(0);    opacity: 0; pointer-events: none; }
+
+        /* full-screen message */
+        .message {
+            height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:64px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="center">
+        <div class="center">
+            <button id="left" type="button">
+                <span class="btn-label">YES</span>
+                <span class="envelope-msg">Dear Emma,<br>I adore you more than words can say.<br>Be mine?<br><span style="font-weight:600; display:block; margin-top:8px;">Dylan</span></span>
+            </button>
+            <button id="right" type="button">NO</button>
+        </div>
+    </div>
+
+    <script>
+        const rightBtn = document.getElementById('right');
+        const leftBtn = document.getElementById('left');
+        const app = document.getElementById('app');
+
+        // Left button: first click turns it into an envelope and hides NO; subsequent clicks toggle open/close
+        leftBtn.addEventListener('click', (ev) => {
+            // If not yet an envelope, initialize envelope state and hide NO
+            if (!leftBtn.classList.contains('envelope')) {
+                // hide the NO button smoothly
+                rightBtn.classList.add('hidden');
+
+                // make the left button look like an envelope
+                leftBtn.classList.add('envelope');
+
+                // ensure the left button matches the same grow scale that NO clicks would produce
+                // if NO has been clicked, use that level; otherwise default to the final grow state (3)
+                const targetGrow = rightClicks > 0 ? Math.min(3, rightClicks) : 3;
+                leftBtn.classList.remove('grow-1', 'grow-2', 'grow-3');
+                leftBtn.classList.add(`grow-${targetGrow}`);
+
+                return;
+            }
+
+            // already an envelope -> toggle open/close to reveal/hide the love letter
+            leftBtn.classList.toggle('open');
+        });
+
+        // Track how many times the right button was clicked
+        let rightClicks = 0;
+
+        rightBtn.addEventListener('click', () => {
+            // ignore further clicks after the button has been removed
+            if (rightClicks >= 3) return;
+
+            rightClicks += 1;
+
+            // remove any previous shrink classes and add the new one
+            rightBtn.classList.remove('shrink-1', 'shrink-2', 'shrink-3');
+            rightBtn.classList.add(`shrink-${rightClicks}`);
+
+            // teleport the button to a random position in the viewport
+            (function teleport(btn) {
+                const vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+                const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+                const rect = btn.getBoundingClientRect();
+
+                // small padding so the button doesn't stick to the edges
+                const pad = 12;
+                const maxLeft = Math.max(0, vw - rect.width - pad);
+                const maxTop = Math.max(0, vh - rect.height - pad);
+
+                const targetLeft = Math.floor(pad + Math.random() * maxLeft);
+                const targetTop = Math.floor(pad + Math.random() * maxTop);
+
+                // convert current absolute position for a smooth jump-to-new-position animation
+                // switch to fixed positioning so it's positioned relative to the viewport
+                const currentLeft = rect.left;
+                const currentTop = rect.top;
+
+                // apply initial fixed position at current location to avoid layout jump
+                btn.style.position = 'fixed';
+                btn.style.left = `${currentLeft}px`;
+                btn.style.top = `${currentTop}px`;
+
+                // force a frame so the browser registers the starting position
+                requestAnimationFrame(() => {
+                    // animate to the new random position
+                    btn.style.left = `${targetLeft}px`;
+                    btn.style.top = `${targetTop}px`;
+                });
+            })(rightBtn);
+
+            // make the left (YES) button grow in steps to mirror the right button shrinking
+            leftBtn.classList.remove('grow-1', 'grow-2', 'grow-3');
+            leftBtn.classList.add(`grow-${rightClicks}`);
+
+            // No final message needed when NO disappears; the shrink classes and pointer-events handle visibility.
+        });
+
+        // Helper: remove near-white background from an <img> by drawing it to a canvas
+        // - img: HTMLImageElement
+        // - tolerance: 0..255 (pixels with r,g,b >= tolerance will be made transparent)
+        function removeWhiteBackground(img, tolerance = 250) {
+            // Create a canvas at image's natural size
+            const canvas = document.createElement('canvas');
+            const w = img.naturalWidth || img.width;
+            const h = img.naturalHeight || img.height;
+            if (!w || !h) return;
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+
+            // If the image is cross-origin without CORS headers, this will throw when reading pixels
+            ctx.drawImage(img, 0, 0, w, h);
+
+            // Try reading pixel data
+            let imageData;
+            try {
+                imageData = ctx.getImageData(0, 0, w, h);
+            } catch (e) {
+                // canvas is tainted (CORS) or another error; rethrow so caller can handle/log
+                throw e;
+            }
+
+            const data = imageData.data;
+            const t = Math.max(0, Math.min(255, tolerance));
+
+            // Iterate pixels and make near-white pixels transparent
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const a = data[i + 3];
+
+                // only affect sufficiently opaque pixels
+                if (a > 10 && r >= t && g >= t && b >= t) {
+                    data[i + 3] = 0; // set alpha to 0
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            // Replace the image src with the processed data URL (PNG preserves alpha)
+            img.src = canvas.toDataURL('image/png');
+        }
+    </script>
+</body>
+</html>
