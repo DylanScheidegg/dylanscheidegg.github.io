@@ -385,12 +385,26 @@
 
                 if (!rsvpLink || !timeInput) return;
 
+                function formatTo12Hour(t) {
+                    if (!t) return '';
+                    // t expected in HH:MM (24-hour) format from <input type="time">
+                    const parts = t.split(':');
+                    if (parts.length < 2) return t;
+                    let hh = parseInt(parts[0], 10);
+                    const mm = parts[1];
+                    const ampm = hh >= 12 ? 'PM' : 'AM';
+                    hh = hh % 12;
+                    if (hh === 0) hh = 12;
+                    return `${hh}:${mm} ${ampm}`;
+                }
+
                 function updateHref() {
-                    const t = timeInput.value; // format HH:MM
+                    const t = timeInput.value; // format HH:MM (24-hour)
                     let subject = `Valentine's Day RSVP - ${dateText}`;
                     if (t) {
-                        // convert to user-friendly time (HH:MM) as provided
-                        subject += ` at ${t}`;
+                        // convert to 12-hour time with AM/PM for readability
+                        const friendly = formatTo12Hour(t);
+                        subject += ` at ${friendly}`;
                     }
                     const href = `mailto:${baseTo}?subject=${encodeURIComponent(subject)}`;
                     rsvpLink.setAttribute('href', href);
@@ -399,11 +413,16 @@
                 // initialize
                 updateHref();
 
+                // stop clicks on the time input or RSVP link from bubbling up to the parent button
+                ['click','mousedown','touchstart','focus'].forEach(evt => {
+                    timeInput.addEventListener(evt, (e) => e.stopPropagation());
+                });
+
                 // update as user picks a time
                 timeInput.addEventListener('input', updateHref);
 
-                // also ensure latest value is applied right before opening mail client
-                rsvpLink.addEventListener('click', updateHref);
+                // ensure latest value is applied right before opening mail client and don't let the click toggle the envelope
+                rsvpLink.addEventListener('click', (e) => { e.stopPropagation(); updateHref(); });
             })();
 
         // Helper: remove near-white background from an <img> by drawing it to a canvas
