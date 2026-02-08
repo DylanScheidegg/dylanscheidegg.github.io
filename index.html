@@ -53,6 +53,29 @@
         }
         #left .envelope-msg .rsvp-btn:hover { transform: translateY(-2px); opacity: 0.98; }
 
+        /* time picker inside the envelope */
+        #left .envelope-msg .rsvp-row { display:block; margin:8px auto 0; text-align:center; }
+        #left .envelope-msg label.rsvp-label { display:block; font-size:13px; color:#333; margin-bottom:6px; }
+        #left .envelope-msg input[type="time"] {
+            display:inline-block;
+            padding:6px 8px;
+            font-size:13px;
+            border-radius:6px;
+            border:1px solid rgba(0,0,0,0.12);
+            background: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+        }
+
+        /* tighten list indentation inside the envelope so bullets don't sit too far right */
+        #left .envelope-msg ul {
+            padding-left: 18px; /* smaller than browser default */
+            margin: 8px 0;
+            list-style-position: outside;
+        }
+        #left .envelope-msg li {
+            margin-bottom: 6px;
+        }
+
         button {
             padding:12px 22px;
             font-size:18px;
@@ -72,6 +95,12 @@
         #left.grow-1 { transform: scale(2.00); }
         #left.grow-2 { transform: scale(3.00); }
         #left.grow-3 { transform: scale(4.00); }
+
+    /* when fixed to the center, combine translate + scale so the button truly centers */
+    #left.fixed-center { position: fixed !important; left: 50% !important; top: 50% !important; z-index: 9999; }
+    #left.fixed-center.grow-1 { transform: translate(-50%, -50%) scale(2.00); }
+    #left.fixed-center.grow-2 { transform: translate(-50%, -50%) scale(3.00); }
+    #left.fixed-center.grow-3 { transform: translate(-50%, -50%) scale(4.00); }
 
         /* envelope transform when clicked — improved visuals (flap + paper) */
         #left {
@@ -135,9 +164,9 @@
             letter-spacing: 0.2px;
             background: #fffefc; /* slightly warm white */
             color: #111;
-            padding: 14px 16px;
+            padding: 8px 12px; /* reduced horizontal padding to remove excess whitespace */
             border-radius: 10px;
-            width: 72%;
+            width: 92%; /* make the paper take more of the envelope width */
             text-align: center;
             box-shadow: 0 12px 30px rgba(0,0,0,0.18);
             z-index: 1;
@@ -149,6 +178,14 @@
             text-align: left;
             font-size:12px;
             transform: translate(-50%, -42%);
+        }
+
+        /* center the paper when the envelope is fixed to the center of the screen */
+        #left.fixed-center.envelope.open .envelope-msg {
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            text-align: left;
         }
 
         #left .btn-label { display: inline-block; transition: opacity 120ms linear; }
@@ -164,9 +201,9 @@
 
         /* tune envelope size/spacing */
         #left.envelope {
-            padding: 18px 26px;
-            min-width: 140px;
-            min-height: 80px;
+            padding: 10px 14px; /* reduced padding so envelope sits closer to the edges */
+            min-width: 120px;
+            min-height: 72px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -203,6 +240,28 @@
             justify-content:center;
             font-size:64px;
         }
+
+        /* Responsive adjustments: reduce envelope growth and constrain widths on small screens */
+        @media (max-width: 520px) {
+            /* cap the envelope size so it doesn't overflow the viewport when scaled */
+            #left.envelope { min-width: 150px; padding: 12px 16px; }
+
+            /* make the grow steps much smaller on mobile */
+            #left.grow-1 { transform: scale(1.15); }
+            #left.grow-2 { transform: scale(1.5); }
+            #left.grow-3 { transform: scale(1.9); }
+
+            /* fixed-center variants on mobile */
+            #left.fixed-center.grow-1 { transform: translate(-50%, -50%) scale(1.15); }
+            #left.fixed-center.grow-2 { transform: translate(-50%, -50%) scale(1.5); }
+            #left.fixed-center.grow-3 { transform: translate(-50%, -50%) scale(1.9); }
+
+            /* keep the paper inside the envelope narrower and readable */
+            #left .envelope-msg { width: 90%; font-size:13px; }
+
+            /* reduce left/right margin so the envelope can come closer to the edge */
+            body { padding: 4px; box-sizing: border-box; }
+        }
     </style>
 </head>
 <body>
@@ -211,7 +270,11 @@
         <div class="center">
             <button id="left" type="button">
                 <span class="btn-label">YES</span>
-                <span class="envelope-msg">Dear Emma,<br>So that we can learn to make sushi together and you can show me how to properly make tiramisu!<br><span style="font-weight:600; display:block; margin-top:8px;">Dylan</span>
+                <span class="envelope-msg">Dear Emma,<br><br>Agenda:<ul><li>Sushi Making</li><li>Tiramisu Lesson</li><li>Lego's</li><li>Jackbox</li><li>Movie Night</li></ul><br><span style="font-weight:600; display:block; margin-top:8px;">-Dylan</span>
+                    <div class="rsvp-row">
+                        <label class="rsvp-label" for="rsvp-time">Arrival time (Feb 14, 2026):</label>
+                        <input id="rsvp-time" type="time" name="rsvp-time" />
+                    </div>
                     <a class="rsvp-btn" href="mailto:dylan.scheidegg123@gmail.com?subject=Valentine%27s%20Day%20RSVP" target="_blank" rel="noopener">RSVP</a>
                 </span>
             </button>
@@ -228,23 +291,33 @@
         leftBtn.addEventListener('click', (ev) => {
             // If not yet an envelope, initialize envelope state and hide NO
             if (!leftBtn.classList.contains('envelope')) {
+
                 // remove the NO button from the DOM immediately so YES can grow
                 if (rightBtn && rightBtn.parentNode) rightBtn.parentNode.removeChild(rightBtn);
+
+                // remove the question text so the envelope can center on the page
+                const q = document.querySelector('.question');
+                if (q && q.parentNode) q.parentNode.removeChild(q);
 
                 // make the left button look like an envelope
                 leftBtn.classList.add('envelope');
 
-                // ensure the left button always goes to the max grow state when YES is clicked
-                // (force grow-3 regardless of the NO button state)
+                // fix the envelope to the center of the viewport and ensure it always goes to the max grow state
+                leftBtn.classList.add('fixed-center');
                 leftBtn.classList.remove('grow-1', 'grow-2', 'grow-3');
                 leftBtn.classList.add('grow-3');
 
                 return;
             }
 
-            // already an envelope -> ensure NO is gone, grow to max, then toggle open/close
-            // ensure NO is removed from the DOM before YES grows
+            // already an envelope -> ensure NO is gone, remove question, fix to center, grow to max, then toggle open/close
             if (rightBtn && rightBtn.parentNode) rightBtn.parentNode.removeChild(rightBtn);
+
+            const q2 = document.querySelector('.question');
+            if (q2 && q2.parentNode) q2.parentNode.removeChild(q2);
+
+            // keep the envelope fixed to the center
+            leftBtn.classList.add('fixed-center');
 
             leftBtn.classList.remove('grow-1', 'grow-2', 'grow-3');
             leftBtn.classList.add('grow-3');
@@ -302,6 +375,36 @@
 
             // No final message needed when NO disappears; the shrink classes and pointer-events handle visibility.
         });
+
+            // RSVP time picker -> update mailto subject to include Feb 14, 2026 and selected time
+            (function bindRsvpTime() {
+                const timeInput = document.getElementById('rsvp-time');
+                const rsvpLink = document.querySelector('.rsvp-btn');
+                const baseTo = 'dylan.scheidegg123@gmail.com';
+                const dateText = 'Feb 14, 2026';
+
+                if (!rsvpLink || !timeInput) return;
+
+                function updateHref() {
+                    const t = timeInput.value; // format HH:MM
+                    let subject = `Valentine's Day RSVP - ${dateText}`;
+                    if (t) {
+                        // convert to user-friendly time (HH:MM) as provided
+                        subject += ` at ${t}`;
+                    }
+                    const href = `mailto:${baseTo}?subject=${encodeURIComponent(subject)}`;
+                    rsvpLink.setAttribute('href', href);
+                }
+
+                // initialize
+                updateHref();
+
+                // update as user picks a time
+                timeInput.addEventListener('input', updateHref);
+
+                // also ensure latest value is applied right before opening mail client
+                rsvpLink.addEventListener('click', updateHref);
+            })();
 
         // Helper: remove near-white background from an <img> by drawing it to a canvas
         // - img: HTMLImageElement
