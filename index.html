@@ -22,6 +22,37 @@
             justify-content:center;
         }
 
+        /* make the top-level app stack vertically so the question sits above the buttons */
+        #app.center { flex-direction: column; }
+
+        /* question text above the buttons */
+        .question {
+            font-size:20px;
+            font-weight:600;
+            color:#223;
+            text-align:center;
+            margin-bottom:6px;
+        }
+
+        /* RSVP button inside the envelope message — smaller and centered */
+        #left .envelope-msg .rsvp-btn {
+            display: block;
+            margin: 10px auto 0;
+            padding: 6px 10px;
+            font-size: 13px;
+            line-height: 1;
+            background: linear-gradient(180deg,#ff4d88,#ff165f);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+            transition: transform 140ms ease, opacity 140ms ease;
+            width: max-content;
+            text-align: center;
+        }
+        #left .envelope-msg .rsvp-btn:hover { transform: translateY(-2px); opacity: 0.98; }
+
         button {
             padding:12px 22px;
             font-size:18px;
@@ -100,7 +131,7 @@
             transform: translate(-50%, -10%);
             opacity: 0;
             transition: opacity 300ms ease, transform 300ms ease, top 300ms ease;
-            font-weight: 600;
+            font-weight: 450;
             letter-spacing: 0.2px;
             background: #fffefc; /* slightly warm white */
             color: #111;
@@ -176,10 +207,13 @@
 </head>
 <body>
     <div id="app" class="center">
+        <div class="question">Would you like to spend Valentine&apos;s day at my place?</div>
         <div class="center">
             <button id="left" type="button">
                 <span class="btn-label">YES</span>
-                <span class="envelope-msg">Dear Emma,<br>I adore you more than words can say.<br>Be mine?<br><span style="font-weight:600; display:block; margin-top:8px;">Dylan</span></span>
+                <span class="envelope-msg">Dear Emma,<br>So that we can learn to make sushi together and you can show me how to properly make tiramisu!<br><span style="font-weight:600; display:block; margin-top:8px;">Dylan</span>
+                    <a class="rsvp-btn" href="mailto:dylan.scheidegg123@gmail.com?subject=Valentine%27s%20Day%20RSVP" target="_blank" rel="noopener">RSVP</a>
+                </span>
             </button>
             <button id="right" type="button">NO</button>
         </div>
@@ -194,22 +228,26 @@
         leftBtn.addEventListener('click', (ev) => {
             // If not yet an envelope, initialize envelope state and hide NO
             if (!leftBtn.classList.contains('envelope')) {
-                // hide the NO button smoothly
-                rightBtn.classList.add('hidden');
+                // remove the NO button from the DOM immediately so YES can grow
+                if (rightBtn && rightBtn.parentNode) rightBtn.parentNode.removeChild(rightBtn);
 
                 // make the left button look like an envelope
                 leftBtn.classList.add('envelope');
 
-                // ensure the left button matches the same grow scale that NO clicks would produce
-                // if NO has been clicked, use that level; otherwise default to the final grow state (3)
-                const targetGrow = rightClicks > 0 ? Math.min(3, rightClicks) : 3;
+                // ensure the left button always goes to the max grow state when YES is clicked
+                // (force grow-3 regardless of the NO button state)
                 leftBtn.classList.remove('grow-1', 'grow-2', 'grow-3');
-                leftBtn.classList.add(`grow-${targetGrow}`);
+                leftBtn.classList.add('grow-3');
 
                 return;
             }
 
-            // already an envelope -> toggle open/close to reveal/hide the love letter
+            // already an envelope -> ensure NO is gone, grow to max, then toggle open/close
+            // ensure NO is removed from the DOM before YES grows
+            if (rightBtn && rightBtn.parentNode) rightBtn.parentNode.removeChild(rightBtn);
+
+            leftBtn.classList.remove('grow-1', 'grow-2', 'grow-3');
+            leftBtn.classList.add('grow-3');
             leftBtn.classList.toggle('open');
         });
 
