@@ -466,94 +466,105 @@
 
             // RSVP time picker + write-in -> swap actions <-> writein row and update mailto for the currently visible RSVP button
             (function bindRsvpTime() {
-                const timeInput   = document.getElementById('rsvp-time');
-                const writeInRow  = document.querySelector('.writein-row');
-                const writeInInput= document.getElementById('write-in');
-
-                const rsvpMain    = document.getElementById('rsvp-main');
-                const rsvpWriteIn = document.getElementById('rsvp-writein');
-
-                const envelopeMsg = document.querySelector('#left .envelope-msg');
-                const nextBtn     = envelopeMsg ? envelopeMsg.querySelector('.rsvp-actions .next-btn') : null;
-                const backBtn     = envelopeMsg ? envelopeMsg.querySelector('.writein-actions .back-btn') : null;
-
-                const baseTo   = 'dylan.scheidegg123@gmail.com';
+                const timeInput = document.getElementById('rsvp-time');
+                const nextBtn = document.querySelector('.next-btn');
+                const rsvpActions = document.querySelector('.rsvp-actions');
+                const writeInRow = document.querySelector('.writein-row');
+                const writeInInput = document.getElementById('write-in');
+                const baseTo = 'dylan.scheidegg123@gmail.com';
                 const dateText = 'Feb 14, 2026';
 
-                if (!timeInput || !envelopeMsg || !rsvpMain || !rsvpWriteIn) return;
+                if (!timeInput || !rsvpActions || !writeInRow) return;
 
                 function formatTo12Hour(t) {
-                if (!t) return '';
-                const [hhStr, mm] = t.split(':');
-                let hh = parseInt(hhStr, 10);
-                const ampm = hh >= 12 ? 'PM' : 'AM';
-                hh = hh % 12;
-                if (hh === 0) hh = 12;
-                return `${hh}:${mm} ${ampm}`;
+                    if (!t) return '';
+                    const parts = t.split(':');
+                    if (parts.length < 2) return t;
+                    let hh = parseInt(parts[0], 10);
+                    const mm = parts[1];
+                    const ampm = hh >= 12 ? 'PM' : 'AM';
+                    hh = hh % 12;
+                    if (hh === 0) hh = 12;
+                    return `${hh}:${mm} ${ampm}`;
                 }
 
-                function buildMailto() {
-                const t = timeInput.value;
-                const friendly = t ? formatTo12Hour(t) : '';
+                function updateHref() {
+                    // always target the currently visible RSVP button
+                    const rsvpLink = document.querySelector('.rsvp-btn');
+                    if (!rsvpLink) return;
 
-                let subject = `Valentine's Day RSVP - ${dateText}`;
-                if (friendly) subject += ` at ${friendly}`;
+                    const t = timeInput.value; // format HH:MM (24-hour)
+                    let subject = `Valentine's Day RSVP - ${dateText}`;
+                    let bodyParts = [];
 
-                const note = (writeInInput?.value || '').trim();
+                    if (t) {
+                        const friendly = formatTo12Hour(t);
+                        subject += ` at ${friendly}`;
+                        bodyParts.push(`Arrival time: ${friendly}`);
+                    } else {
+                        bodyParts.push('Arrival time: (not specified)');
+                    }
 
-                let body =
-                    `Hi Dylan,\r\n\r\n` +
-                    `I'd like to RSVP for ${dateText}.\r\n` +
-                    `Arrival time: ${friendly || '(not specified)'}\r\n`;
+                    const writeText = writeInInput ? writeInInput.value.trim() : '';
+                    if (writeText) bodyParts.push('Note: ' + writeText);
 
-                if (note) body += `\r\nNote:\r\n${note}\r\n`;
+                    let body = `Hi Dylan,\r\n\r\nI'd like to RSVP for ${dateText}.\r\n`;
+                    body += bodyParts.join('\r\n');
+                    body += '\r\n\r\nThanks,\r\n(Your name)';
 
-                body += `\r\nThanks,\r\nEmma`;
-
-                return `mailto:${baseTo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    const href = `mailto:${baseTo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    rsvpLink.setAttribute('href', href);
                 }
 
-                function updateHrefs() {
-                const href = buildMailto();
-                rsvpMain.setAttribute('href', href);
-                rsvpWriteIn.setAttribute('href', href);
-                }
+                // initialize
+                updateHref();
 
-                // keep envelope button from toggling when interacting with controls
-                [timeInput, writeInInput, nextBtn, backBtn, rsvpMain, rsvpWriteIn].forEach(el => {
-                if (!el) return;
-                ['click','mousedown','touchstart','focus'].forEach(evt =>
-                    el.addEventListener(evt, (e) => e.stopPropagation())
-                );
+                // prevent interactive controls from bubbling to the envelope button
+                ['click','mousedown','touchstart','focus'].forEach(evt => {
+                    timeInput.addEventListener(evt, (e) => e.stopPropagation());
+                    if (writeInInput) writeInInput.addEventListener(evt, (e) => e.stopPropagation());
+                    if (nextBtn) nextBtn.addEventListener(evt, (e) => e.stopPropagation());
                 });
 
-                // Next / Back UI swap (your compact mode)
-                if (nextBtn) {
-                nextBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    envelopeMsg.classList.add('compact');
-                    if (writeInRow) writeInRow.style.display = 'block';
-                    writeInInput?.focus();
-                    updateHrefs();
-                });
+                // Next -> switch envelope into compact state (show only write-in row)
+                const envelopeMsg = document.querySelector('#left .envelope-msg');
+                if (nextBtn && envelopeMsg) {
+                    nextBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        envelopeMsg.classList.add('compact');
+                        // ensure write-in row is visible and focus textarea
+                        writeInRow.style.display = 'block';
+                        if (writeInInput) writeInInput.focus();
+                    });
                 }
 
-                if (backBtn) {
-                backBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    envelopeMsg.classList.remove('compact');
-                    if (writeInRow) writeInRow.style.display = 'none';
-                    writeInInput?.blur();
-                    updateHrefs();
-                });
+                // Back button inside writeInRow - exit compact state and restore full message
+                const backBtn = writeInRow.querySelector('.back-btn');
+                if (backBtn && envelopeMsg) {
+                    backBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        envelopeMsg.classList.remove('compact');
+                        // hide the write-in area and remove focus from the textarea
+                        try { writeInRow.style.display = 'none'; } catch (err) { /* ignore */ }
+                        if (writeInInput) writeInInput.blur();
+                        // small delay to allow DOM/CSS to settle then update href
+                        setTimeout(() => updateHref(), 10);
+                    });
                 }
 
-                // live updates
-                timeInput.addEventListener('input', updateHrefs);
-                writeInInput?.addEventListener('input', updateHrefs);
+                // update as user edits
+                timeInput.addEventListener('input', updateHref);
+                if (writeInInput) writeInInput.addEventListener('input', updateHref);
 
-                // set initial hrefs
-                updateHrefs();
+                // delegated: ensure latest value is applied right before opening mail client and don't let the click toggle the envelope
+                document.addEventListener('click', (e) => {
+                    const target = e.target;
+                    if (target && target.classList && target.classList.contains('rsvp-btn')) {
+                        e.stopPropagation();
+                        updateHref();
+                    }
+                }, true);
             })();
 
         // Helper: remove near-white background from an <img> by drawing it to a canvas
