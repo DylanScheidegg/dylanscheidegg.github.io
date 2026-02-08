@@ -36,8 +36,8 @@
 
         /* RSVP button inside the envelope message — smaller and centered */
         #left .envelope-msg .rsvp-btn {
-            display: inline-block;
-            margin: 0;
+            display: block;
+            margin: 10px auto 0;
             padding: 6px 10px;
             font-size: 13px;
             line-height: 1;
@@ -53,52 +53,12 @@
         }
         #left .envelope-msg .rsvp-btn:hover { transform: translateY(-2px); opacity: 0.98; }
 
-        /* next page button placed next to RSVP — secondary style */
-        #left .envelope-msg .next-btn {
-            display: inline-block;
-            margin: 0;
-            padding: 6px 10px;
-            font-size: 13px;
-            line-height: 1;
-            background: #fff;
-            color: #333;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 700;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.06);
-            transition: transform 120ms ease, opacity 120ms ease;
-            border: 1px solid rgba(0,0,0,0.06);
-            cursor: pointer;
-        }
-        #left .envelope-msg .next-btn:hover { transform: translateY(-2px); }
-
-    /* write-in area hidden by default, revealed when 'Next' is clicked */
-    #left .envelope-msg .writein-row { display:none; margin-top:8px; }
-
-    /* compact state: hide all envelope content except the write-in row */
-    #left .envelope-msg.compact > :not(.writein-row) { display: none !important; }
-    #left .envelope-msg.compact .writein-row { display: block !important; }
-        #left .envelope-msg textarea.writein-input {
-            width: 80%;
-            min-height: 64px;
-            resize: vertical;
-            padding:8px 10px;
-            font-size:13px;
-            border-radius:8px;
-            border:1px solid rgba(0,0,0,0.08);
-            box-shadow: 0 6px 18px rgba(0,0,0,0.04) inset;
-            font-family: inherit;
-        }
-
-    /* time picker inside the envelope */
-    #left .envelope-msg .rsvp-row { display:block; margin:8px auto 0; text-align:center; }
-
-    /* actions (RSVP + Next) side-by-side: RSVP left, Next right */
-    #left .envelope-msg .rsvp-actions { display:flex; gap:8px; justify-content:space-between; align-items:center; margin-top:10px; width:100%; }
-        #left .envelope-msg label.rsvp-label { display:block; font-size:13px; color:#333; margin-bottom:6px; text-align: left;}
+        /* time picker inside the envelope */
+        #left .envelope-msg .rsvp-row { display:block; margin:8px auto 0; text-align:center; }
+        #left .envelope-msg label.rsvp-label { display:block; font-size:13px; color:#333; margin-bottom:6px; }
         #left .envelope-msg input[type="time"] {
             display:inline-block;
-            padding:6px 10px;
+            padding:6px 8px;
             font-size:13px;
             border-radius:6px;
             border:1px solid rgba(0,0,0,0.12);
@@ -336,35 +296,13 @@
         <div class="center">
             <button id="left" type="button">
                 <span class="btn-label">YES</span>
-                <div class="envelope-msg"><div class="envelope-body">Dear Emma,<br><br>Agenda:<ul><li>Sushi Making</li><li>Tiramisu Lesson</li><li>Lego's</li><li>Jackbox</li><li>Movie Night</li></ul><br><span style="font-weight:600; display:block; margin-top:8px;">-Dylan</span></div>
+                <span class="envelope-msg">Dear Emma,<br><br>Agenda:<ul><li>Sushi Making</li><li>Tiramisu Lesson</li><li>Lego's</li><li>Jackbox</li><li>Movie Night</li></ul><br><span style="font-weight:600; display:block; margin-top:8px;">-Dylan</span>
                     <div class="rsvp-row">
-                        <label class="rsvp-label" for="rsvp-time">Arrival time<br>(Feb 14, 2026):</label>
+                        <label class="rsvp-label" for="rsvp-time">Arrival time (Feb 14, 2026):</label>
                         <input id="rsvp-time" type="time" name="rsvp-time" />
                     </div>
-                    <div class="rsvp-actions">
-                        <a class="rsvp-btn" href="mailto:dylan.scheidegg123@gmail.com?subject=Valentine%27s%20Day%20RSVP" target="_blank" rel="noopener">RSVP</a>
-                        <a class="next-btn" href="#" role="button">Next</a>
-                    </div>
-
-                    <div class="writein-row" style="display:none">
-                        <label class="rsvp-label" for="write-in">Write-in (optional):</label>
-                        <textarea id="write-in" class="writein-input" placeholder="Add a note or special request..."></textarea>
-                        <div class="writein-actions" style="margin-top:8px; display:flex; gap:8px; justify-content:space-between; align-items:center;">
-                            <a class="back-btn next-btn" href="#" role="button">Back</a>
-                            <a
-                                class="rsvp-btn"
-                                href="mailto:dylan.scheidegg123@gmail.com
-                                    ?subject=Valentine%27s%20Day%20RSVP
-                                    &body=Hi%20Dylan%2C%0A%0AI%27m%20in%20for%20Valentine%27s%20Day.%0A%0ALet%20me%20know%20the%20details.%0A"
-                                target="_blank"
-                                rel="noopener"
-                                >
-                                RSVP
-                            </a>
-                        </div>
-                    </div>
-                    
-                </div>
+                    <a class="rsvp-btn" href="mailto:dylan.scheidegg123@gmail.com?subject=Valentine%27s%20Day%20RSVP" target="_blank" rel="noopener">RSVP</a>
+                </span>
             </button>
             <button id="right" type="button">NO</button>
         </div>
@@ -464,20 +402,18 @@
             // No final message needed when NO disappears; the shrink classes and pointer-events handle visibility.
         });
 
-            // RSVP time picker + write-in -> swap actions <-> writein row and update mailto for the currently visible RSVP button
+            // RSVP time picker -> update mailto subject to include Feb 14, 2026 and selected time
             (function bindRsvpTime() {
                 const timeInput = document.getElementById('rsvp-time');
-                const nextBtn = document.querySelector('.next-btn');
-                const rsvpActions = document.querySelector('.rsvp-actions');
-                const writeInRow = document.querySelector('.writein-row');
-                const writeInInput = document.getElementById('write-in');
+                const rsvpLink = document.querySelector('.rsvp-btn');
                 const baseTo = 'dylan.scheidegg123@gmail.com';
                 const dateText = 'Feb 14, 2026';
 
-                if (!timeInput || !rsvpActions || !writeInRow) return;
+                if (!rsvpLink || !timeInput) return;
 
                 function formatTo12Hour(t) {
                     if (!t) return '';
+                    // t expected in HH:MM (24-hour) format from <input type="time">
                     const parts = t.split(':');
                     if (parts.length < 2) return t;
                     let hh = parseInt(parts[0], 10);
@@ -489,82 +425,30 @@
                 }
 
                 function updateHref() {
-                    // always target the currently visible RSVP button
-                    const rsvpLink = document.querySelector('.rsvp-btn');
-                    if (!rsvpLink) return;
-
                     const t = timeInput.value; // format HH:MM (24-hour)
                     let subject = `Valentine's Day RSVP - ${dateText}`;
-                    let bodyParts = [];
-
                     if (t) {
+                        // convert to 12-hour time with AM/PM for readability
                         const friendly = formatTo12Hour(t);
                         subject += ` at ${friendly}`;
-                        bodyParts.push(`Arrival time: ${friendly}`);
-                    } else {
-                        bodyParts.push('Arrival time: (not specified)');
                     }
-
-                    const writeText = writeInInput ? writeInInput.value.trim() : '';
-                    if (writeText) bodyParts.push('Note: ' + writeText);
-
-                    let body = `Hi Dylan,\r\n\r\nI'd like to RSVP for ${dateText}.\r\n`;
-                    body += bodyParts.join('\r\n');
-                    body += '\r\n\r\nThanks,\r\n(Your name)';
-
-                    const href = `mailto:${baseTo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    const href = `mailto:${baseTo}?subject=${encodeURIComponent(subject)}`;
                     rsvpLink.setAttribute('href', href);
                 }
 
                 // initialize
                 updateHref();
 
-                // prevent interactive controls from bubbling to the envelope button
+                // stop clicks on the time input or RSVP link from bubbling up to the parent button
                 ['click','mousedown','touchstart','focus'].forEach(evt => {
                     timeInput.addEventListener(evt, (e) => e.stopPropagation());
-                    if (writeInInput) writeInInput.addEventListener(evt, (e) => e.stopPropagation());
-                    if (nextBtn) nextBtn.addEventListener(evt, (e) => e.stopPropagation());
                 });
 
-                // Next -> switch envelope into compact state (show only write-in row)
-                const envelopeMsg = document.querySelector('#left .envelope-msg');
-                if (nextBtn && envelopeMsg) {
-                    nextBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        envelopeMsg.classList.add('compact');
-                        // ensure write-in row is visible and focus textarea
-                        writeInRow.style.display = 'block';
-                        if (writeInInput) writeInInput.focus();
-                    });
-                }
-
-                // Back button inside writeInRow - exit compact state and restore full message
-                const backBtn = writeInRow.querySelector('.back-btn');
-                if (backBtn && envelopeMsg) {
-                    backBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        envelopeMsg.classList.remove('compact');
-                        // hide the write-in area and remove focus from the textarea
-                        try { writeInRow.style.display = 'none'; } catch (err) { /* ignore */ }
-                        if (writeInInput) writeInInput.blur();
-                        // small delay to allow DOM/CSS to settle then update href
-                        setTimeout(() => updateHref(), 10);
-                    });
-                }
-
-                // update as user edits
+                // update as user picks a time
                 timeInput.addEventListener('input', updateHref);
-                if (writeInInput) writeInInput.addEventListener('input', updateHref);
 
-                // delegated: ensure latest value is applied right before opening mail client and don't let the click toggle the envelope
-                document.addEventListener('click', (e) => {
-                    const target = e.target;
-                    if (target && target.classList && target.classList.contains('rsvp-btn')) {
-                        e.stopPropagation();
-                        updateHref();
-                    }
-                }, true);
+                // ensure latest value is applied right before opening mail client and don't let the click toggle the envelope
+                rsvpLink.addEventListener('click', (e) => { e.stopPropagation(); updateHref(); });
             })();
 
         // Helper: remove near-white background from an <img> by drawing it to a canvas
